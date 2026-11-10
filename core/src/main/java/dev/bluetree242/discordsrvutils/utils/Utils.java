@@ -30,6 +30,8 @@ import github.scarsz.discordsrv.dependencies.jda.api.entities.Guild;
 import github.scarsz.discordsrv.dependencies.jda.api.entities.Member;
 import github.scarsz.discordsrv.dependencies.jda.api.exceptions.ErrorResponseException;
 import github.scarsz.discordsrv.dependencies.kyori.adventure.text.Component;
+import github.scarsz.discordsrv.dependencies.kyori.adventure.text.minimessage.MiniMessage;
+import github.scarsz.discordsrv.dependencies.kyori.adventure.text.serializer.legacy.LegacyComponentSerializer;
 import github.scarsz.discordsrv.dependencies.kyori.adventure.text.serializer.plain.PlainTextComponentSerializer;
 import net.kyori.adventure.text.serializer.ansi.ANSIComponentSerializer;
 import org.jetbrains.annotations.Contract;
@@ -48,6 +50,10 @@ import java.util.List;
 import java.util.concurrent.TimeUnit;
 
 public class Utils {
+
+    private static final MiniMessage MINI_MESSAGE = MiniMessage.miniMessage();
+    private static final java.util.regex.Pattern LEGACY_COLOR = java.util.regex.Pattern.compile(
+            "[&\\u00a7][0-9a-fk-orx]", java.util.regex.Pattern.CASE_INSENSITIVE);
 
     public static final ObjectMapper OBJECT_MAPPER = new ObjectMapper();
 
@@ -229,8 +235,20 @@ public class Utils {
         return sw.toString();
     }
 
-    public static String colors(String s) {
-        return DiscordSRVUtils.get().getServer().colors(s);
+    public static Component colors(String s) {
+        return MINI_MESSAGE.deserialize(s);
+    }
+
+    /** Imports older leveling configuration text; new messages use MiniMessage directly. */
+    public static String migrateLegacyMessage(String message) {
+        if (!MINI_MESSAGE.stripTags(message).equals(message)) return message;
+        if (!LEGACY_COLOR.matcher(message).find()) return message;
+        return MINI_MESSAGE.serialize(LegacyComponentSerializer.legacyAmpersand()
+                .deserialize(message.replace('\u00a7', '&')));
+    }
+
+    public static String escapeMiniMessage(String value) {
+        return MINI_MESSAGE.escapeTags(String.valueOf(value));
     }
 
     public static Member retrieveMember(Guild guild, long id) {

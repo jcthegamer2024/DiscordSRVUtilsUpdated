@@ -90,7 +90,12 @@ public class GameLevelingListener extends PlatformListener {
             boolean leveledUp = stats.setXP(stats.getXp() + toAdd, new MinecraftLevelupEvent(stats, e.getPlayer()));
             stats.addMessage(MessageType.MINECRAFT);
             if (leveledUp) {
-                e.getPlayer().sendMessage(PlaceholdObjectList.ofArray(core, new PlaceholdObject(core, stats, "stats"), new PlaceholdObject(core, e.getPlayer(), "player")).apply(String.join("\n", core.getLevelingConfig().minecraft_levelup_message()), e.getPlayer()));
+                String message = core.getLevelingConfig().minecraft_levelup_message().stream()
+                        .map(Utils::migrateLegacyMessage)
+                        .collect(java.util.stream.Collectors.joining("\n"));
+                e.getPlayer().sendMessage(PlaceholdObjectList.ofArray(core,
+                        new PlaceholdObject(core, stats, "stats"), new PlaceholdObject(core, e.getPlayer(), "player"))
+                        .apply(message, e.getPlayer()));
                 core.getLevelingManager().getLevelingRewardsManager().rewardIfOnline(stats);
             }
         });

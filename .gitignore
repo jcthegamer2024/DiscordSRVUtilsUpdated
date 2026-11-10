@@ -31,3 +31,10 @@ core/build/
 bukkit/build/
 .idea/
 .gradle/
+
+# Local Paper test server (worlds, plugin configs and bot credentials)
+/run/
+
+# Local agent reference; intentionally not published
+/AGENTS.md
+/agents.md

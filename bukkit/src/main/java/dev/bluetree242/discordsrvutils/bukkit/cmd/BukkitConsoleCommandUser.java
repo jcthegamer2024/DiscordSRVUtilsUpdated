@@ -48,7 +48,7 @@ public class BukkitConsoleCommandUser extends ConsoleCommandUser {
     }
 
     public void sendMessage(String msg) {
-        sender.sendMessage(Utils.colors(msg));
+        sendMessage(Utils.colors(msg));
     }
 
 

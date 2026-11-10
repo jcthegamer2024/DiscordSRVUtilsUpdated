@@ -70,7 +70,7 @@ public class LevelingRewardsManager {
                     return;
                 }
                 json = (ObjectNode) objectMapper.readTree(file);
-                file.renameTo(filer);
+                // Retain the original legacy file as a recovery copy after conversion.
                 levelingRewardsRaw = objectMapper.createObjectNode();
                 if (json.isEmpty() || (json.size() == 1 && json.has("_wiki"))) return;
                 json = convertToRewards(json);

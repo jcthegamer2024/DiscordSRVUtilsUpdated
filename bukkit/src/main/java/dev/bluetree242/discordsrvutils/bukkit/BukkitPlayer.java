@@ -49,7 +49,7 @@ public class BukkitPlayer extends PlatformPlayer<Player> {
 
     @Override
     public void sendMessage(String msg) {
-        original.sendMessage(Utils.colors(msg));
+        sendMessage(Utils.colors(msg));
     }
 
     @Override

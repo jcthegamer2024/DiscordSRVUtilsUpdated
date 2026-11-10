@@ -39,12 +39,12 @@ public interface LevelingConfig {
     boolean enabled();
 
     @ConfKey("minecraft-levelup-message")
-    @ConfComments("# Message when a minecraft player levelup")
+    @ConfComments("# Message when a minecraft player levelup (MiniMessage, e.g. <yellow>Hello</yellow>)")
     @AnnotationBasedSorter.Order(10)
     @ConfDefault.DefaultStrings({
-            "&e-----------------------------------------------------&r",
-            "          &cCongratulations! &eYou leveled up to level [stats.level]!",
-            "&e-----------------------------------------------------&r"
+            "<reset><yellow>-----------------------------------------------------<reset>",
+            "          <reset><red>Congratulations! <reset><yellow>You leveled up to level [stats.level]!",
+            "<reset><yellow>-----------------------------------------------------<reset>"
     })
     List<String> minecraft_levelup_message();
 

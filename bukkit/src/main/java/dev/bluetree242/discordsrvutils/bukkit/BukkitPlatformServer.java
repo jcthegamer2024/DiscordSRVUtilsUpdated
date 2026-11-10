@@ -31,8 +31,9 @@ import dev.bluetree242.discordsrvutils.platform.PlatformServer;
 import dev.bluetree242.discordsrvutils.platform.command.CommandUser;
 import github.scarsz.discordsrv.util.SchedulerUtil;
 import lombok.Getter;
+import github.scarsz.discordsrv.dependencies.kyori.adventure.text.Component;
+import dev.bluetree242.discordsrvutils.utils.Utils;
 import org.bukkit.Bukkit;
-import org.bukkit.ChatColor;
 import org.bukkit.entity.Player;
 import org.bukkit.plugin.Plugin;
 
@@ -95,8 +96,8 @@ public class BukkitPlatformServer extends PlatformServer {
 
 
     @Override
-    public String colors(String s) {
-        return ChatColor.translateAlternateColorCodes('&', s);
+    public Component colors(String s) {
+        return Utils.colors(s);
     }
 
     @Override

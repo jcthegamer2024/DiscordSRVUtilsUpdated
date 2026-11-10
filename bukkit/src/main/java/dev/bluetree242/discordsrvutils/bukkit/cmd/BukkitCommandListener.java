@@ -31,11 +31,12 @@ import dev.bluetree242.discordsrvutils.utils.Utils;
 import org.bukkit.command.*;
 import org.bukkit.entity.Player;
 import org.jetbrains.annotations.NotNull;
-import org.jetbrains.annotations.Nullable;
+import io.papermc.paper.command.brigadier.BasicCommand;
+import io.papermc.paper.command.brigadier.CommandSourceStack;
 
 import java.util.List;
 
-public class BukkitCommandListener implements CommandExecutor, TabCompleter {
+public class BukkitCommandListener implements BasicCommand {
     private final DiscordSRVUtils core;
     private final DiscordSRVUtilsCommand cmd;
     private final DiscordSRVUtilsBukkit main;
@@ -46,23 +47,23 @@ public class BukkitCommandListener implements CommandExecutor, TabCompleter {
         this.main = main;
     }
 
-    @Nullable
     @Override
-    public List<String> onTabComplete(@NotNull CommandSender sender, @NotNull Command command, @NotNull String alias, @NotNull String[] args) {
-        return cmd.onTabComplete(args, wrapUser(sender), alias);
+    public List<String> suggest(@NotNull CommandSourceStack source, @NotNull String[] args) {
+        String[] completionArgs = args.length == 0 ? new String[]{""} : args;
+        return cmd.onTabComplete(completionArgs, wrapUser(source.getSender()), "discordsrvutils");
     }
 
     @Override
-    public boolean onCommand(@NotNull CommandSender sender, @NotNull Command command, @NotNull String label, @NotNull String[] args) {
+    public void execute(@NotNull CommandSourceStack source, @NotNull String[] args) {
+        CommandSender sender = source.getSender();
         core.getAsyncManager().executeAsync(() -> {
             try {
-                cmd.onRunAsync(args, wrapUser(sender), label);
+                cmd.onRunAsync(args, wrapUser(sender), "discordsrvutils");
             } catch (Throwable throwable) {
-                sender.sendMessage(Utils.colors("&cError Running Command"));
+                wrapUser(sender).sendMessage("<red>Error Running Command");
                 throwable.printStackTrace();
             }
         });
-        return true;
     }
 
     private CommandUser wrapUser(CommandSender sender) {

@@ -20,13 +20,13 @@
  * END
  */
 
-import net.kyori.blossom.BlossomExtension
+import org.apache.tools.ant.filters.ReplaceTokens
 
 plugins {
     id("java")
     id("maven-publish")
-    id("com.github.johnrengelman.shadow") version "7.1.2"
-    id("net.kyori.blossom") version "1.3.1" apply false
+    id("com.gradleup.shadow") version "9.2.2"
+    id("xyz.jpenilla.run-paper") version "3.0.2"
 }
 
 dependencies {
@@ -38,6 +38,7 @@ dependencies {
 
 allprojects {
     apply(plugin = "java")
+    apply(plugin = "com.gradleup.shadow")
     repositories {
         mavenCentral()
         maven("https://mvn-repo.arim.space/affero-gpl3/")
@@ -45,12 +46,18 @@ allprojects {
         maven("https://nexus.scarsz.me/content/groups/public/")
     }
     dependencies {
-        compileOnly("org.projectlombok:lombok:1.18.30")
-        annotationProcessor("org.projectlombok:lombok:1.18.30")
+        compileOnly("org.projectlombok:lombok:1.18.40")
+        annotationProcessor("org.projectlombok:lombok:1.18.40")
     }
     java {
-        sourceCompatibility = JavaVersion.VERSION_1_8
-        targetCompatibility = JavaVersion.VERSION_1_8
+        toolchain.languageVersion.set(JavaLanguageVersion.of(25))
+    }
+}
+
+allprojects {
+    tasks.withType<JavaCompile>().configureEach {
+        options.release.set(25)
+        options.compilerArgs.addAll(listOf("-Xlint:deprecation"))
     }
 }
 
@@ -69,24 +76,31 @@ subprojects {
     }
 
     if (name == "core") {
-        apply(plugin = "net.kyori.blossom")
-        extensions.configure<BlossomExtension> {
-            val main = "src/main/java/dev/bluetree242/discordsrvutils/VersionInfo.java"
-            replaceToken("@version@", version, main)
-            replaceToken("@build@", buildNumber, main)
-            replaceToken("@commit@", commit, main)
-            replaceToken("@buildDate@", System.currentTimeMillis(), main)
+        val prepareJavaSources = tasks.register<Sync>("prepareJavaSources") {
+            from("src/main/java")
+            into(layout.buildDirectory.dir("generated/sources/versionInfo/java"))
+            val tokens = mapOf(
+                "version" to project.version.toString(),
+                "build" to buildNumber,
+                "commit" to commit,
+                "buildDate" to System.currentTimeMillis().toString()
+            )
+            inputs.properties(tokens)
+            filesMatching("**/VersionInfo.java") {
+                filter<ReplaceTokens>("tokens" to tokens)
+            }
+        }
+        sourceSets.main {
+            java.setSrcDirs(listOf(prepareJavaSources))
         }
     } else if (name == "bukkit") {
         tasks.processResources {
+            inputs.property("version", project.version)
             expand("version" to project.version)
         }
     }
 }
 
-tasks.build {
-    finalizedBy(tasks.shadowJar)
-}
 tasks.shadowJar {
     archiveClassifier.set("")
 }
@@ -96,5 +110,31 @@ publishing {
         create<MavenPublication>("maven") {
             from(components["java"])
         }
+    }
+}
+
+val prepareTestServer = tasks.register("prepareTestServer") {
+    group = "Run Paper"
+    description = "Creates local-only server defaults without replacing existing settings."
+    doLast {
+        val properties = layout.projectDirectory.file("run/server.properties").asFile
+        properties.parentFile.mkdirs()
+        if (properties.createNewFile()) {
+            properties.writeText("server-ip=127.0.0.1\nserver-port=25565\nmotd=DiscordSRVUtils test server\nview-distance=6\nsimulation-distance=4\n")
+        }
+    }
+}
+
+// Uses the root shaded JAR, containing both the Paper adapter and core dependencies.
+tasks.runServer {
+    dependsOn(prepareTestServer)
+    minecraftVersion("26.3")
+    runDirectory.set(layout.projectDirectory.dir("run"))
+    javaLauncher.set(javaToolchains.launcherFor {
+        languageVersion.set(JavaLanguageVersion.of(25))
+    })
+    jvmArgs("-Xms1G", "-Xmx2G")
+    downloadPlugins {
+        url("https://nexus.scarsz.me/content/groups/public/com/discordsrv/discordsrv/${project.properties["discordsrv_version"]}/discordsrv-${project.properties["discordsrv_version"]}.jar")
     }
 }

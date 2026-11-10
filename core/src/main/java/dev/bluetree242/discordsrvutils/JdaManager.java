@@ -28,6 +28,7 @@ import dev.bluetree242.discordsrvutils.systems.leveling.listeners.jda.DiscordLev
 import dev.bluetree242.discordsrvutils.systems.suggestions.listeners.SuggestionListener;
 import dev.bluetree242.discordsrvutils.systems.tickets.listeners.PanelOpenListener;
 import dev.bluetree242.discordsrvutils.systems.tickets.listeners.TicketCloseListener;
+import dev.bluetree242.discordsrvutils.systems.tickets.listeners.TicketClaimListener;
 import dev.bluetree242.discordsrvutils.systems.tickets.listeners.TicketDeleteListener;
 import dev.bluetree242.discordsrvutils.systems.tickets.listeners.TicketFirstMessageListener;
 import dev.bluetree242.discordsrvutils.waiters.listeners.CreatePanelListener;
@@ -59,6 +60,7 @@ public class JdaManager {
         listeners.add(new TicketDeleteListener(core));
         listeners.add(new PanelOpenListener(core));
         listeners.add(new TicketCloseListener(core));
+        listeners.add(new TicketClaimListener(core));
         listeners.add(new EditPanelListener(core));
         listeners.add(new DiscordLevelingListener(core));
         listeners.add(new SuggestionListener(core));

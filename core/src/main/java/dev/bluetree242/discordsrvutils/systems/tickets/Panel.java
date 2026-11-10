@@ -167,7 +167,7 @@ public class Panel {
                     new PlaceholdObject(core, user, "user"),
                     new PlaceholdObject(core, this, "panel"),
                     new PlaceholdObject(core, core.getPlatform().getDiscordSRV().getMainGuild(), "guild")
-            ), null).build()).setActionRow(Button.danger("close_ticket", Emoji.fromUnicode("\uD83D\uDD12")).withLabel(core.getTicketsConfig().ticket_close_button())).complete();
+            ), null).build()).setActionRow(core.getTicketManager().getOpenTicketButtons(null)).complete();
             conn.insertInto(TicketsTable.TICKETS)
                     .set(TicketsTable.TICKETS.ID, id)
                     .set(TicketsTable.TICKETS.CHANNEL, channel.getIdLong())

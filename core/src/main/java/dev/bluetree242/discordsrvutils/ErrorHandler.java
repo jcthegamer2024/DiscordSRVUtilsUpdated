@@ -64,7 +64,7 @@ public class ErrorHandler {
                 for (PlatformPlayer p : core.getServer().getOnlinePlayers()) {
                     if (p.hasPermission("discordsrvutils.errornotifications")) {
                         // Tell admins that something was wrong
-                        p.sendMessage("&7[&eDSU&7] Plugin had an error. Check console for details. Support at https://discordsrvutils.xyz/support");
+                        p.sendMessage("<reset><gray>[<reset><yellow>DSU<reset><gray>] Plugin had an error. Check console for details. Support at https://discordsrvutils.xyz/support");
                     }
                 }
             lastErrorTime = System.currentTimeMillis();
@@ -87,7 +87,7 @@ public class ErrorHandler {
         for (PlatformPlayer p : core.getServer().getOnlinePlayers()) {
             if (p.hasPermission("discordsrvutils.errornotifications"))
                 // Tell admins that something was wrong
-                p.sendMessage("&7[&eDSU&7] &c" + sv);
+                p.sendMessage("<reset><gray>[<reset><yellow>DSU<reset><gray>] <reset><red>" + Utils.escapeMiniMessage(sv));
         }
     }
 }

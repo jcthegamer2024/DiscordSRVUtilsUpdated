@@ -32,6 +32,9 @@ import github.scarsz.discordsrv.dependencies.kyori.adventure.platform.bukkit.Buk
 import github.scarsz.discordsrv.objects.managers.AccountLinkManager;
 import lombok.Getter;
 import org.bukkit.plugin.java.JavaPlugin;
+import org.bukkit.event.EventHandler;
+import org.bukkit.event.Listener;
+import org.bukkit.event.server.PluginDisableEvent;
 import org.slf4j.LoggerFactory;
 
 import java.lang.reflect.InvocationTargetException;
@@ -61,7 +64,7 @@ public class DiscordSRVUtilsBukkit extends JavaPlugin {
 
     @Override
     public void onEnable() {
-        if (getServer().getPluginManager().getPlugin("DiscordSRV") == null) {
+        if (!getServer().getPluginManager().isPluginEnabled("DiscordSRV")) {
             getLogger().severe("DiscordSRV is not installed or failed to start. Download DiscordSRV at https://modrinth.com/plugin/discordsrv");
             getLogger().severe("Disabling...");
             core = null;
@@ -75,6 +78,15 @@ public class DiscordSRVUtilsBukkit extends JavaPlugin {
             disable();
             return;
         }
+        getServer().getPluginManager().registerEvents(new Listener() {
+            @EventHandler
+            public void onDependencyDisabled(PluginDisableEvent event) {
+                if (event.getPlugin().getName().equals("DiscordSRV")) {
+                    getLogger().warning("DiscordSRV stopped. Disabling DiscordSRVUtils; check DiscordSRV's configuration and bot token.");
+                    disable();
+                }
+            }
+        }, this);
         adventure = BukkitAudiences.create(this);
         if (core == null) {
             core = new DiscordSRVUtils(new BukkitPlugin(this));
@@ -110,7 +122,7 @@ public class DiscordSRVUtilsBukkit extends JavaPlugin {
     }
 
     public void disable() {
-        setEnabled(false);
+        getServer().getPluginManager().disablePlugin(this);
     }
 
 
@@ -141,7 +153,7 @@ public class DiscordSRVUtilsBukkit extends JavaPlugin {
                     valueMap.put("AFK Messages", 1);
                 return valueMap;
             }));
-            metrics.addCustomChart(new SimplePie("discordsrv_versions", () -> DiscordSRV.getPlugin().getDescription().getVersion()));
+            metrics.addCustomChart(new SimplePie("discordsrv_versions", () -> DiscordSRV.getPlugin().getPluginMeta().getVersion()));
             metrics.addCustomChart(new SimplePie("admins", () -> String.valueOf(core.getJdaManager().getAdminIds().size())));
         }
     }

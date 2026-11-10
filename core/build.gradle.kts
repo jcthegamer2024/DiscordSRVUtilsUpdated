@@ -49,13 +49,12 @@ import org.jooq.meta.jaxb.Property
 plugins {
     id("java")
     id("maven-publish")
-    id("nu.studer.jooq") version "5.2.2"
-    id("org.flywaydb.flyway") version "8.5.3"
-    id("com.github.johnrengelman.shadow")
+    id("nu.studer.jooq") version "10.2.1"
+    id("org.flywaydb.flyway") version "11.14.1"
+    id("com.gradleup.shadow")
 }
 
 rootProject.allprojects {
-    apply(plugin = "com.github.johnrengelman.shadow")
     tasks.shadowJar {
         archiveClassifier.set("")
         val prefix = "dev.bluetree242.discordsrvutils.dependencies"
@@ -105,10 +104,12 @@ dependencies {
     compileOnly("com.discordsrv:discordsrv:${rootProject.properties["discordsrv_version"]}")
 
     // JOOQ for SQL queries
-    implementation("org.jooq:jooq:3.14.16")
+    implementation("org.jooq:jooq:3.16.23")
 
     // Code Generation
     testImplementation("com.h2database:h2:1.4.197")
+    testImplementation("junit:junit:4.13.2")
+    testRuntimeOnly("com.discordsrv:discordsrv:${rootProject.properties["discordsrv_version"]}")
     jooqGenerator("com.h2database:h2:1.4.197")
 
     // Logging
@@ -131,7 +132,7 @@ flyway {
 }
 
 jooq {
-    version.set("3.14.16")
+    version.set("3.16.23")
     configurations {
         create("main") {
             jooqConfiguration.apply {
@@ -224,4 +225,8 @@ publishing {
 
 tasks.named("publishMavenPublicationToMavenRepository") {
     dependsOn("jar")
+}
+
+tasks.test {
+    useJUnit()
 }

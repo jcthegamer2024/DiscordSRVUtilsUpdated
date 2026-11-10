@@ -24,6 +24,7 @@ package dev.bluetree242.discordsrvutils.commands.game;
 
 import dev.bluetree242.discordsrvutils.DiscordSRVUtils;
 import dev.bluetree242.discordsrvutils.VersionInfo;
+import dev.bluetree242.discordsrvutils.config.ConfigUpgrade;
 import dev.bluetree242.discordsrvutils.events.LevelupEvent;
 import dev.bluetree242.discordsrvutils.exceptions.ConfigurationLoadException;
 import dev.bluetree242.discordsrvutils.exceptions.InvalidResponseException;
@@ -56,31 +57,56 @@ public class DiscordSRVUtilsCommand implements PlatformCommand {
     @Override
     public void onRunAsync(String[] args, CommandUser sender, String label) throws Throwable {
         if (args.length == 0) {
-            sender.sendMessage("&eRunning DiscordSRVUtils v&a" + core.getPlatform().getDescription().getVersion());
-            sender.sendMessage("&eBuild " + (VersionInfo.BUILD_NUMBER.equalsIgnoreCase("NONE") ? "&aNone/Unknown" : "&a#" + VersionInfo.BUILD_NUMBER));
-            sender.sendMessage("&bStatus: " + (core.isReady() ? "&aRunning and functioning" : "&cNot running"));
+            sender.sendMessage("<reset><yellow>Running DiscordSRVUtils v<reset><green>" + core.getPlatform().getDescription().getVersion());
+            sender.sendMessage("<reset><yellow>Build " + (VersionInfo.BUILD_NUMBER.equalsIgnoreCase("NONE") ? "<reset><green>None/Unknown" : "<reset><green>#" + VersionInfo.BUILD_NUMBER));
+            sender.sendMessage("<reset><aqua>Status: " + (core.isReady() ? "<reset><green>Running and functioning" : "<reset><red>Not running"));
             return;
         }
         if (args.length >= 1) {
-            if (args[0].equalsIgnoreCase("reload")) {
-                if (sender.hasPermission("discordsrvutils.reload")) {
-                    sender.sendMessage("&eReloading Configuration");
+            if (args[0].equalsIgnoreCase("configupgrade")) {
+                if (!sender.hasPermission("discordsrvutils.configupgrade")) {
+                    sender.sendMessage("<red>You do not have permission to upgrade configurations.");
+                    return;
+                }
+                try {
+                    ConfigUpgrade.Result result = ConfigUpgrade.upgrade(core.getPlatform().getDataFolder().toPath());
+                    if (result.messages() == 0) {
+                        sender.sendMessage("<green>No legacy Minecraft message formatting needs upgrading.");
+                        return;
+                    }
+                    sender.sendMessage("<green>Converted " + result.messages() + " message(s). Backup: <yellow>"
+                            + Utils.escapeMiniMessage(result.backup().getFileName().toString()));
                     try {
                         core.reloadConfigs();
-                        sender.sendMessage("&aConfiguration successfully reloaded");
+                        sender.sendMessage("<green>Configuration reloaded successfully.");
+                    } catch (Exception ex) {
+                        sender.sendMessage("<red>File upgraded, but reload failed. Check console; the backup is available.");
+                        core.getLogger().log(java.util.logging.Level.SEVERE, "Configuration reload after upgrade failed", ex);
+                    }
+                } catch (Exception ex) {
+                    sender.sendMessage("<red>Config upgrade failed: " + Utils.escapeMiniMessage(ex.getMessage()));
+                    core.getLogger().log(java.util.logging.Level.SEVERE, "Configuration upgrade failed", ex);
+                }
+                return;
+            } else if (args[0].equalsIgnoreCase("reload")) {
+                if (sender.hasPermission("discordsrvutils.reload")) {
+                    sender.sendMessage("<reset><yellow>Reloading Configuration");
+                    try {
+                        core.reloadConfigs();
+                        sender.sendMessage("<reset><green>Configuration successfully reloaded");
                     } catch (ConfigurationLoadException e) {
-                        sender.sendMessage("&cCould not reload the " + e.getConfigName() + ". Please check server console");
+                        sender.sendMessage("<reset><red>Could not reload the " + e.getConfigName() + ". Please check server console");
                         e.printStackTrace();
                     }
                     return;
                 }
             } else if (args[0].equalsIgnoreCase("debug")) {
                 if (sender.hasPermission("discordsrvutils.debug")) {
-                    sender.sendMessage("&aPreparing Debug Report... Please wait");
+                    sender.sendMessage("<reset><green>Preparing Debug Report... Please wait");
                     try {
-                        sender.sendMessage("&aYour Debug report is available at: &e" + core.getServer().getDebugger().run());
+                        sender.sendMessage("<reset><green>Your Debug report is available at: <reset><yellow>" + core.getServer().getDebugger().run());
                     } catch (Exception e) {
-                        sender.sendMessage("&cERROR: " + e.getMessage());
+                        sender.sendMessage("<reset><red>ERROR: " + Utils.escapeMiniMessage(e.getMessage()));
                     }
                     return;
                 }
@@ -88,11 +114,11 @@ public class DiscordSRVUtilsCommand implements PlatformCommand {
                 if (sender.hasPermission("discordsrvutils.updatecheck")) {
                     try {
                         UpdateChecker.UpdateCheckResult result = core.getUpdateChecker().updateCheck(false);
-                        if (result == null) sender.sendMessage("&cLooks like update checking is disabled.");
+                        if (result == null) sender.sendMessage("<reset><red>Looks like update checking is disabled.");
                         else {
                             if (result.getMessage() == null) {
                                 if (result.getVersionsBehind() <= 0) {
-                                    sender.sendMessage("&aYou are up to date.");
+                                    sender.sendMessage("<reset><green>You are up to date.");
                                 } else {
                                     sender.sendMessage(Component.text("You are ").color(NamedTextColor.YELLOW)
                                             .append(Component.text(result.getVersionsBehind()).color(NamedTextColor.RED))
@@ -103,7 +129,7 @@ public class DiscordSRVUtilsCommand implements PlatformCommand {
                             } else sender.sendMessage(result.getMessage());
                         }
                     } catch (InvalidResponseException e) {
-                        sender.sendMessage("&4Failed to check for updates: &c" + e.getFriendlyMessage());
+                        sender.sendMessage("<reset><dark_red>Failed to check for updates: <reset><red>" + Utils.escapeMiniMessage(e.getFriendlyMessage()));
                     }
                     return;
                 }
@@ -111,7 +137,7 @@ public class DiscordSRVUtilsCommand implements PlatformCommand {
                 if (sender.hasPermission("discordsrvutils.resetlevel")) {
                     String name = args.length >= 2 ? args[1] : null;
                     if (name == null) {
-                        sender.sendMessage("&cPlease provide player name or all for all players.");
+                        sender.sendMessage("<reset><red>Please provide player name or all for all players.");
                         return;
                     }
                     if (name.equalsIgnoreCase("all")) {
@@ -119,17 +145,17 @@ public class DiscordSRVUtilsCommand implements PlatformCommand {
                         core.getLevelingManager().cachedUUIDS.invalidateAll();
                         core.getLevelingManager().getLevelingRewardsManager().setRewardCache(Utils.OBJECT_MAPPER.createObjectNode());
                         core.getLevelingManager().getLevelingRewardsManager().saveRewardCache();
-                        sender.sendMessage("&eEveryone's level has been reset");
+                        sender.sendMessage("<reset><yellow>Everyone's level has been reset");
                     } else {
                         PlayerStats stats = core.getLevelingManager().getPlayerStats(name);
                         if (stats == null) {
-                            sender.sendMessage("&cPlayer not found");
+                            sender.sendMessage("<reset><red>Player not found");
                         } else {
                             stats.setLevel(0);
                             stats.setXP(0);
                             core.getLevelingManager().getLevelingRewardsManager().getRewardCache().remove(stats.getUuid().toString());
                             core.getLevelingManager().getLevelingRewardsManager().saveRewardCache();
-                            sender.sendMessage("&ePlayer's level has been reset.");
+                            sender.sendMessage("<reset><yellow>Player's level has been reset.");
                         }
                     }
                     return;
@@ -137,34 +163,34 @@ public class DiscordSRVUtilsCommand implements PlatformCommand {
             } else if (args[0].equalsIgnoreCase("migrateLeveling")) {
                 if (sender instanceof ConsoleCommandUser) { // Only console
                     if (migrated) {
-                        sender.sendMessage("&cAlready migrated.");
+                        sender.sendMessage("<reset><red>Already migrated.");
                         return;
                     }
                     migrated = true;
-                    sender.sendMessage("&cMigrating leveling to new mee6 leveling, please wait....");
+                    sender.sendMessage("<reset><red>Migrating leveling to new mee6 leveling, please wait....");
                     core.getLevelingManager().convertToMee6();
-                    sender.sendMessage("&eSuccessfully migrated, If you used leveling roles before, please reconfigure according to the new leveling system, keep in mind that leveling roles was upgraded to leveling-&lrewards&e.json (https://wiki.discordsrvutils.xyz/leveling-conversion)");
+                    sender.sendMessage("<reset><yellow>Successfully migrated, If you used leveling roles before, please reconfigure according to the new leveling system, keep in mind that leveling roles was upgraded to leveling-<bold>rewards<reset><yellow>.json (https://wiki.discordsrvutils.xyz/leveling-conversion)");
                     return;
                 }
             } else if (args[0].equalsIgnoreCase("addxp") && core.getLevelingConfig().enabled()) {
                 if (sender.hasPermission("discordsrvutils.addxp")) {
                     String name = args.length >= 2 ? args[1] : null;
                     if (name == null) {
-                        sender.sendMessage("&cPlease provide player name.");
+                        sender.sendMessage("<reset><red>Please provide player name.");
                         return;
                     }
                     String amountString = args.length >= 3 ? args[2] : null;
                     if (amountString == null || !Utils.isInt(amountString)) {
-                        sender.sendMessage("&cPlease provide a valid xp amount.");
+                        sender.sendMessage("<reset><red>Please provide a valid xp amount.");
                         return;
                     }
                     PlayerStats stats = core.getLevelingManager().getPlayerStats(name);
                     if (stats == null) {
-                        sender.sendMessage("&cPlayer not found");
+                        sender.sendMessage("<reset><red>Player not found");
                     } else {
                         int xp = Integer.parseInt(amountString);
                         stats.setXP(xp + stats.getXp(), new LevelupEvent(stats, stats.getUuid()));
-                        sender.sendMessage("&aAdded &6" + xp + " &axp to &6" + name + "&a. Now they are level &6" + stats.getLevel() + " &aand have &6" + stats.getXp() + "&a xp.");
+                        sender.sendMessage("<reset><green>Added <reset><gold>" + xp + " <reset><green>xp to <reset><gold>" + name + "<reset><green>. Now they are level <reset><gold>" + stats.getLevel() + " <reset><green>and have <reset><gold>" + stats.getXp() + "<reset><green> xp.");
                         core.getLevelingManager().getLevelingRewardsManager().rewardIfOnline(stats);
                         return;
                     }
@@ -172,12 +198,12 @@ public class DiscordSRVUtilsCommand implements PlatformCommand {
             } else if ((args[0].equalsIgnoreCase("sendAfk") || args[0].equalsIgnoreCase("sendUnAfk")) && sender instanceof ConsoleCommandUser) {
                 String name = args.length >= 2 ? args[1] : null;
                 if (name == null) {
-                    sender.sendMessage("&cPlease provide player name.");
+                    sender.sendMessage("<reset><red>Please provide player name.");
                     return;
                 }
                 PlatformPlayer player = core.getServer().getPlayer(name);
                 if (player == null) {
-                    sender.sendMessage("&cPlayer not found.");
+                    sender.sendMessage("<reset><red>Player not found.");
                     return;
                 }
                 if (!player.shouldSendAfk()) return;
@@ -194,13 +220,15 @@ public class DiscordSRVUtilsCommand implements PlatformCommand {
                 }
             }
         }
-        sender.sendMessage("&cSubCommand not found");
+        sender.sendMessage("<reset><red>SubCommand not found");
     }
 
     @Override
     public List<String> onTabComplete(String[] args, CommandUser sender, String label) {
         List<String> values = new ArrayList<>();
         if (args.length == 1) {
+            if (sender.hasPermission("discordsrvutils.configupgrade"))
+                values.add("configupgrade");
             if (sender.hasPermission("discordsrvutils.reload"))
                 values.add("reload");
             if (sender.hasPermission("discordsrvutils.debug"))

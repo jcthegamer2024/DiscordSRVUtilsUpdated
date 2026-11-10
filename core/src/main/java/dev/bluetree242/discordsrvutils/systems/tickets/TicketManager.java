@@ -123,17 +123,25 @@ public class TicketManager {
             DSLContext conn = r.configuration().dsl();
             panel = getPanelById(r.getId());
         }
-        return new Ticket(core,
+        Ticket ticket = new Ticket(core,
                 r.getId(),
                 r.getUserid(),
                 r.getChannel(),
                 Utils.getDBoolean(r.getClosed()),
                 panel,
                 r.getMessageid(), r.getFirstmessage());
+        ticket.setClaimedBy(r.getClaimedby());
+        return ticket;
     }
 
     protected Ticket getTicket(TicketsRecord r) {
         return getTicket(r, null);
+    }
+
+    public List<Button> getOpenTicketButtons(Long claimedBy) {
+        Button claim = Button.primary("claim_ticket", core.getTicketsConfig().ticket_claim_button());
+        if (claimedBy != null) claim = claim.withLabel("Claimed").asDisabled();
+        return List.of(claim, Button.danger("close_ticket", core.getTicketsConfig().ticket_close_button()));
     }
 
     public void updateTickets() {
@@ -148,6 +156,14 @@ public class TicketManager {
                     jooq.deleteFrom(TicketsTable.TICKETS)
                             .where(TicketsTable.TICKETS.CHANNEL.eq(record.getChannel()))
                             .execute();
+                } else if (!Utils.getDBoolean(record.getClosed())) {
+                    channel.retrieveMessageById(record.getMessageid()).queue(message -> {
+                        List<Button> buttons = getOpenTicketButtons(record.getClaimedby());
+                        if (!message.getButtons().equals(buttons)) {
+                            message.editMessage(message).setActionRows(ActionRow.of(buttons)).queue(
+                                    ignored -> {}, error -> core.getLogger().warning("Could not refresh ticket buttons: " + error.getMessage()));
+                        }
+                    }, error -> core.getLogger().warning("Could not retrieve ticket control message in channel " + record.getChannel()));
                 }
             }
 

@@ -23,6 +23,7 @@
 package dev.bluetree242.discordsrvutils.platform;
 
 import dev.bluetree242.discordsrvutils.platform.command.CommandUser;
+import github.scarsz.discordsrv.dependencies.kyori.adventure.text.Component;
 
 import java.util.List;
 import java.util.UUID;
@@ -43,7 +44,7 @@ public abstract class PlatformServer {
 
     public abstract CommandUser getConsoleSender();
 
-    public abstract String colors(String s);
+    public abstract Component colors(String s);
 
     public abstract Object getOriginal();
 

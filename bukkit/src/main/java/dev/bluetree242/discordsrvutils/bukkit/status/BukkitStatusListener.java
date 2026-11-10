@@ -42,9 +42,9 @@ public class BukkitStatusListener extends StatusListener implements Listener, Ev
     public void register() {
         for (String event : core.getStatusConfig().update_events()) {
             try {
-                Class eventClass = Class.forName(event);
+                Class<? extends Event> eventClass = Class.forName(event).asSubclass(Event.class);
                 Bukkit.getPluginManager().registerEvent(eventClass, this, EventPriority.MONITOR, this, (Plugin) core.getPlatform().getOriginal(), false);
-            } catch (ClassNotFoundException e) {
+            } catch (ClassNotFoundException | ClassCastException e) {
                 core.severe("Event " + event + " not found");
             }
         }

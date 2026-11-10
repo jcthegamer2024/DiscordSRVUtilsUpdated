@@ -20,8 +20,7 @@
  * END
  */
 
-import net.minecrell.pluginyml.bukkit.BukkitPluginDescription
-import java.net.URL
+import java.net.URI
 
 /*
  * LICENSE
@@ -47,7 +46,6 @@ import java.net.URL
 
 plugins {
     id("java")
-    id("net.minecrell.plugin-yml.bukkit") version "0.6.0"
 }
 
 repositories {
@@ -57,28 +55,35 @@ repositories {
     maven("https://jitpack.io")
 }
 
-fun urlFile(url: String, name: String): ConfigurableFileCollection {
-    val file = File("${project.layout.buildDirectory.asFile.get()}/download/${name}.jar")
-    file.parentFile.mkdirs()
-    if (!file.exists()) {
-        URL(url).openStream().use { downloadStream ->
-            file.outputStream().use { fileOut ->
-                downloadStream.copyTo(fileOut)
+// Plugin integrations may bring older server APIs; compile against Paper only.
+configurations.configureEach {
+    exclude(group = "org.spigotmc", module = "spigot-api")
+    exclude(group = "org.bukkit", module = "bukkit")
+}
+
+// Download at task execution time so `clean build` cannot remove the API after resolution.
+val downloadCmiApi = tasks.register("downloadCmiApi") {
+    val apiJar = layout.buildDirectory.file("download/CMI-API.jar")
+    outputs.file(apiJar)
+    doLast {
+        val file = apiJar.get().asFile
+        file.parentFile.mkdirs()
+        URI("https://github.com/Zrips/CMI-API/releases/download/8.7.8.2/CMIAPI8.7.8.2.jar")
+            .toURL().openStream().use { input ->
+                file.outputStream().use { output -> input.copyTo(output) }
             }
-        }
     }
-    return files(file.path.toString())
 }
 
 dependencies {
-    // Bukkit Plugins and APIs
-    compileOnly("io.papermc.paper:paper-api:1.17-R0.1-SNAPSHOT")
+    // Paper API and plugin integrations
+    compileOnly("io.papermc.paper:paper-api:26.3.build.+")
     compileOnly("com.gitlab.ruany:LiteBansAPI:0.3.4")
     compileOnly("space.arim.libertybans:bans-api:0.8.0")
     compileOnly("com.github.LeonMangler:SuperVanish:6.2.17")
-    compileOnly("com.github.DevLeoko:AdvancedBan:b4bbb6a")
+    compileOnly("com.github.DevLeoko:AdvancedBan:v2.3.0")
     compileOnly("me.clip:placeholderapi:2.11.2")
-    compileOnly(urlFile("https://github.com/Zrips/CMI-API/releases/download/8.7.8.2/CMIAPI8.7.8.2.jar", "CMI-API"))
+    compileOnly(files(downloadCmiApi))
     compileOnly("net.lapismc:AFKPlus:3.3.15")
     compileOnly("com.discordsrv:discordsrv:${rootProject.properties["discordsrv_version"]}")
     compileOnly("net.essentialsx:EssentialsX:2.19.0")
@@ -87,46 +92,8 @@ dependencies {
     implementation("org.slf4j:slf4j-api:2.0.1")
 
     // JOOQ
-    implementation("org.jooq:jooq:3.14.16")
+    implementation("org.jooq:jooq:3.16.23")
 
     // Core plugin
     implementation(project(":core"))
-}
-
-
-// Generates plugin.yml
-bukkit {
-    name = rootProject.name
-    description = rootProject.description
-    version = project.version.toString()
-    author = "BlueTree242"
-    main = "dev.bluetree242.discordsrvutils.bukkit.DiscordSRVUtilsBukkit"
-    apiVersion = "1.13"
-    website = "discordsrvutils.xyz"
-    foliaSupported = true
-    commands {
-        register("discordsrvutils") {
-            aliases = listOf("dsu")
-        }
-    }
-    softDepend = listOf("DiscordSRV", "Essentials", "AdvancedBan", "PlaceholderAPI", "LiteBans", "LibertyBans", "CMI", "SuperVanish", "PremiumVanish", "AfkPlus")
-    permissions {
-        register("discordsrvutils.reload")
-        register("discordsrvutils.debug")
-        register("discordsrvutils.errornotifications")
-        register("discordsrvutils.updatecheck")
-        register("discordsrvutils.removeslash")
-        register("discordsrvutils.resetlevel")
-        register("discordsrvutils.addxp")
-        forEach {
-            it.default = BukkitPluginDescription.Permission.Default.OP
-        }
-    }
-}
-
-allprojects {
-    project.java {
-        disableAutoTargetJvm() // Paper uses java 17, but we need to support java 8
-        toolchain.languageVersion.set(JavaLanguageVersion.of(17)) // This doesn't change the compiled class version.
-    }
 }

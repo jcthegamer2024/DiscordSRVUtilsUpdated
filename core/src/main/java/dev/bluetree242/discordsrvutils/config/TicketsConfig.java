@@ -66,6 +66,12 @@ public interface TicketsConfig {
     @ConfDefault.DefaultString("Close Ticket")
     String ticket_close_button();
 
+    @AnnotationBasedSorter.Order(55)
+    @ConfKey("ticket-claim-button")
+    @ConfComments("# Text on the staff-only Claim Ticket button")
+    @ConfDefault.DefaultString("Claim Ticket")
+    String ticket_claim_button();
+
     @AnnotationBasedSorter.Order(60)
     @ConfKey("ticket-reopen-button")
     @ConfComments("# Text on Ticket Reopen Button")

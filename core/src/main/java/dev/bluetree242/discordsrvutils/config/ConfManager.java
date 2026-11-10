@@ -25,7 +25,6 @@ package dev.bluetree242.discordsrvutils.config;
 import dev.bluetree242.discordsrvutils.exceptions.ConfigurationLoadException;
 import space.arim.dazzleconf.ConfigurationFactory;
 import space.arim.dazzleconf.ConfigurationOptions;
-import space.arim.dazzleconf.error.ConfigFormatSyntaxException;
 import space.arim.dazzleconf.error.InvalidConfigException;
 import space.arim.dazzleconf.ext.snakeyaml.CommentMode;
 import space.arim.dazzleconf.ext.snakeyaml.SnakeYamlConfigurationFactory;
@@ -35,13 +34,17 @@ import space.arim.dazzleconf.sorter.AnnotationBasedSorter;
 
 import java.io.IOException;
 import java.nio.file.Path;
+import java.nio.file.Files;
+import java.nio.file.StandardOpenOption;
 
 public class ConfManager<C> extends ConfigurationHelper<C> {
     private String confname;
+    private final Path configPath;
     private volatile C configData;
 
     private ConfManager(Path configFolder, String fileName, ConfigurationFactory<C> factory) {
         super(configFolder, fileName, factory);
+        configPath = configFolder.resolve(fileName);
     }
 
     public static <C> ConfManager<C> create(Path configFolder, String fileName, Class<C> configClass) {
@@ -50,32 +53,40 @@ public class ConfManager<C> extends ConfigurationHelper<C> {
                 .commentMode(CommentMode.alternativeWriter("%s"))
                 // Enables writing YAML comments
                 .build();
-        ConfManager val = new ConfManager<>(configFolder, fileName,
+        ConfManager<C> val = new ConfManager<>(configFolder, fileName,
                 SnakeYamlConfigurationFactory.create(configClass, new ConfigurationOptions.Builder().sorter(new AnnotationBasedSorter()).build(), yamlOptions));
         val.confname = fileName;
         return val;
     }
 
+    /** Existing files are read only; missing keys use defaults in memory. */
+    @Override
+    public synchronized C reloadConfigData() throws IOException, InvalidConfigException {
+        C defaults = getFactory().loadDefaults();
+        Files.createDirectories(configPath.getParent());
+        if (!Files.exists(configPath)) {
+            // CREATE_NEW prevents a concurrent file creation from being overwritten.
+            try (var output = Files.newOutputStream(configPath, StandardOpenOption.CREATE_NEW, StandardOpenOption.WRITE)) {
+                getFactory().write(defaults, output);
+            }
+            return defaults;
+        }
+        try (var input = Files.newInputStream(configPath)) {
+            return getFactory().load(input, defaults);
+        }
+    }
+
     public void reloadConfig() {
         try {
             configData = reloadConfigData();
-        } catch (IOException ex) {
-            throw new ConfigurationLoadException(ex, confname);
-
-        } catch (ConfigFormatSyntaxException ex) {
-            configData = getFactory().loadDefaults();
-
-            throw new ConfigurationLoadException(ex, confname);
-
-        } catch (InvalidConfigException ex) {
-            configData = getFactory().loadDefaults();
-
+        } catch (IOException | InvalidConfigException ex) {
+            // Keep the last successfully loaded values and leave invalid files untouched.
             throw new ConfigurationLoadException(ex, confname);
         }
     }
 
     public C getConfigData() {
-        C configData = (C) this.configData;
+        C configData = this.configData;
         if (configData == null) {
             throw new IllegalStateException("Configuration has not been loaded yet");
         }

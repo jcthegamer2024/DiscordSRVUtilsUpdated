@@ -195,17 +195,17 @@ public class DiscordSRVUtils {
             // Set storage string to use later
             String storage = getSqlconfig().isEnabled() ? "MySQL" : "HsqlDB";
             // Print startup message
-            getServer().getConsoleSender().sendMessage("\n[]=====[&2Enabling DiscordSRVUtils&r]=====[]\n" +
-                    "| &cInformation:\n&r" +
-                    "|   &cName: &rDiscordSRVUtils\n&r" +
-                    "|   &cDevelopers: &rBlueTree242\n&r" +
-                    "|   &cVersion: &r" + main.getDescription().getVersion() + "\n&r" +
-                    (VersionInfo.BUILD_NUMBER.equalsIgnoreCase("NONE") ? "" : "|   &cBuild: &r#" + VersionInfo.BUILD_NUMBER + "\n&r") +
-                    "|   &cStorage: &r" + storage + "\n&r" +
-                    "| &cSupport:\n&r" +
-                    "|   &cGithub: &rhttps://github.com/BlueTree242/BlueDevelopersInc/issues\n" +
-                    "|   &cWiki: &rhttps://wiki.discordsrvutils.xyz\n" +
-                    "|   &cDiscord: &rhttps://discordsrvutils.xyz/support\n" +
+            getServer().getConsoleSender().sendMessage("\n[]=====[<reset><dark_green>Enabling DiscordSRVUtils<reset>]=====[]\n" +
+                    "| <reset><red>Information:\n<reset>" +
+                    "|   <reset><red>Name: <reset>DiscordSRVUtils\n<reset>" +
+                    "|   <reset><red>Developers: <reset>BlueTree242\n<reset>" +
+                    "|   <reset><red>Version: <reset>" + main.getDescription().getVersion() + "\n<reset>" +
+                    (VersionInfo.BUILD_NUMBER.equalsIgnoreCase("NONE") ? "" : "|   <reset><red>Build: <reset>#" + VersionInfo.BUILD_NUMBER + "\n<reset>") +
+                    "|   <reset><red>Storage: <reset>" + storage + "\n<reset>" +
+                    "| <reset><red>Support:\n<reset>" +
+                    "|   <reset><red>Github: <reset>https://github.com/BlueTree242/BlueDevelopersInc/issues\n" +
+                    "|   <reset><red>Wiki: <reset>https://wiki.discordsrvutils.xyz\n" +
+                    "|   <reset><red>Discord: <reset>https://discordsrvutils.xyz/support\n" +
                     "[]====================================[]");
             asyncManager.start();
             // Register our in game commands
@@ -224,13 +224,7 @@ public class DiscordSRVUtils {
                 whenReady();
             }
             whenStarted();
-            getServer().runAsync(() -> {
-                try {
-                    UpdateChecker.UpdateCheckResult result = getUpdateChecker().updateCheck(true);
-                } catch (InvalidResponseException e) {
-                    getLogger().severe(e.getFriendlyMessage());
-                }
-            });
+
         } catch (Throwable ex) {
             // Plugin couldn't start, sadly
             errorHandler.startupError(ex, "Plugin could not start");
@@ -276,25 +270,41 @@ public class DiscordSRVUtils {
 
     public void reloadConfigs(boolean first) throws IOException, InvalidConfigException {
         configManager.reloadConfig();
-        config = configManager.reloadConfigData();
+        config = configManager.getConfigData();
         sqlConfigManager.reloadConfig();
-        sqlconfig = sqlConfigManager.reloadConfigData();
+        sqlconfig = sqlConfigManager.getConfigData();
         bansIntegrationConfigManager.reloadConfig();
-        bansConfig = bansIntegrationConfigManager.reloadConfigData();
+        bansConfig = bansIntegrationConfigManager.getConfigData();
         ticketsConfigManager.reloadConfig();
-        ticketsConfig = ticketsConfigManager.reloadConfigData();
+        ticketsConfig = ticketsConfigManager.getConfigData();
         levelingConfigManager.reloadConfig();
-        levelingConfig = levelingConfigManager.reloadConfigData();
+        levelingConfig = levelingConfigManager.getConfigData();
         suggestionsConfigManager.reloadConfig();
-        suggestionsConfig = suggestionsConfigManager.reloadConfigData();
+        suggestionsConfig = suggestionsConfigManager.getConfigData();
         statusConfigManager.reloadConfig();
-        statusConfig = statusConfigManager.reloadConfigData();
+        statusConfig = statusConfigManager.getConfigData();
         levelingManager.getLevelingRewardsManager().reloadLevelingRewards();
         levelingManager.getLevelingRewardsManager().reloadRewardCache();
         setSettings(first);
     }
 
+    private final java.util.concurrent.atomic.AtomicBoolean startupUpdateCheckScheduled =
+            new java.util.concurrent.atomic.AtomicBoolean();
+
     public void whenReady() {
+        if (!isReady()) return;
+        // DiscordSRV supplies the HTTP/JSON classes. Do not start this work while
+        // it may still fail initialisation and close its plugin classloader.
+        if (startupUpdateCheckScheduled.compareAndSet(false, true)) {
+            getServer().runAsync(() -> {
+                if (!isEnabled()) return;
+                try {
+                    getUpdateChecker().updateCheck(true);
+                } catch (InvalidResponseException e) {
+                    if (isEnabled()) getLogger().severe(e.getFriendlyMessage());
+                }
+            });
+        }
         // Do it async, fixing tickets and suggestions can take long time
         asyncManager.executeAsync(() -> {
             registerListeners();

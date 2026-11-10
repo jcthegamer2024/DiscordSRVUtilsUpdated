@@ -1,0 +1,70 @@
+name: DiscordSRVUtils
+version: '${version}'
+main: dev.bluetree242.discordsrvutils.bukkit.DiscordSRVUtilsBukkit
+description: Elevate your Discord server with more bot features!
+authors: [BlueTree242]
+website: https://discordsrvutils.xyz
+api-version: '26.3'
+folia-supported: true
+
+# Dependencies must expose their classes to this Paper plugin.
+dependencies:
+  server:
+    DiscordSRV:
+      load: BEFORE
+      required: true
+      join-classpath: true
+    Essentials:
+      load: BEFORE
+      required: false
+      join-classpath: true
+    AdvancedBan:
+      load: BEFORE
+      required: false
+      join-classpath: true
+    PlaceholderAPI:
+      load: BEFORE
+      required: false
+      join-classpath: true
+    LiteBans:
+      load: BEFORE
+      required: false
+      join-classpath: true
+    LibertyBans:
+      load: BEFORE
+      required: false
+      join-classpath: true
+    CMI:
+      load: BEFORE
+      required: false
+      join-classpath: true
+    SuperVanish:
+      load: BEFORE
+      required: false
+      join-classpath: true
+    PremiumVanish:
+      load: BEFORE
+      required: false
+      join-classpath: true
+    AfkPlus:
+      load: BEFORE
+      required: false
+      join-classpath: true
+
+permissions:
+  discordsrvutils.reload:
+    default: op
+  discordsrvutils.debug:
+    default: op
+  discordsrvutils.errornotifications:
+    default: op
+  discordsrvutils.updatecheck:
+    default: op
+  discordsrvutils.removeslash:
+    default: op
+  discordsrvutils.resetlevel:
+    default: op
+  discordsrvutils.addxp:
+    default: op
+  discordsrvutils.configupgrade:
+    default: op

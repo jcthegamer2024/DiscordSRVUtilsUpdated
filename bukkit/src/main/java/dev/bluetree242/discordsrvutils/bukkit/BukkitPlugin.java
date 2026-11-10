@@ -28,7 +28,6 @@ import dev.bluetree242.discordsrvutils.bukkit.listeners.afk.afkplus.AfkPlusHook;
 import dev.bluetree242.discordsrvutils.bukkit.listeners.afk.cmi.CMIHook;
 import dev.bluetree242.discordsrvutils.bukkit.listeners.afk.essentials.EssentialsHook;
 import dev.bluetree242.discordsrvutils.bukkit.listeners.game.BukkitListener;
-import dev.bluetree242.discordsrvutils.bukkit.listeners.game.ChatListener;
 import dev.bluetree242.discordsrvutils.bukkit.listeners.game.PaperChatListener;
 import dev.bluetree242.discordsrvutils.bukkit.listeners.punishments.advancedban.AdvancedBanHook;
 import dev.bluetree242.discordsrvutils.bukkit.listeners.punishments.libertybans.LibertybansHook;
@@ -49,7 +48,8 @@ import org.bukkit.plugin.java.JavaPlugin;
 
 import java.io.File;
 import java.io.InputStream;
-import java.util.Objects;
+import java.util.List;
+import io.papermc.paper.plugin.lifecycle.event.types.LifecycleEvents;
 import java.util.logging.Logger;
 
 public class BukkitPlugin extends PluginPlatform<JavaPlugin> {
@@ -112,20 +112,7 @@ public class BukkitPlugin extends PluginPlatform<JavaPlugin> {
     @Override
     public void registerListeners() {
         Bukkit.getServer().getPluginManager().registerEvents(new BukkitListener(core), main);
-        if (isPaperChatSupported()) {
-            Bukkit.getServer().getPluginManager().registerEvents(new PaperChatListener(core), main);
-        } else {
-            Bukkit.getServer().getPluginManager().registerEvents(new ChatListener(core), main);
-        }
-    }
-
-    private boolean isPaperChatSupported() {
-        try {
-            Class.forName("io.papermc.paper.event.player.AsyncChatEvent");
-            return true;
-        } catch (ClassNotFoundException ignored) {
-        }
-        return false;
+        Bukkit.getServer().getPluginManager().registerEvents(new PaperChatListener(core), main);
     }
 
     @Override
@@ -141,8 +128,8 @@ public class BukkitPlugin extends PluginPlatform<JavaPlugin> {
     @Override
     public void registerCommands() {
         BukkitCommandListener listener = new BukkitCommandListener(core, main);
-        Objects.requireNonNull(main.getCommand("discordsrvutils")).setExecutor(listener);
-        Objects.requireNonNull(main.getCommand("discordsrvutils")).setTabCompleter(listener);
+        main.getLifecycleManager().registerEventHandler(LifecycleEvents.COMMANDS, event ->
+                event.registrar().register("discordsrvutils", "Manage DiscordSRVUtils", List.of("dsu"), listener));
     }
 
     @Override

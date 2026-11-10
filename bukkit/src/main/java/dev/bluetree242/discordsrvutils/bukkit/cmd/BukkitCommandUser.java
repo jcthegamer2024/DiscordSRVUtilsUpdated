@@ -23,6 +23,8 @@
 package dev.bluetree242.discordsrvutils.bukkit.cmd;
 
 import dev.bluetree242.discordsrvutils.platform.command.CommandUser;
+import dev.bluetree242.discordsrvutils.DiscordSRVUtils;
+import dev.bluetree242.discordsrvutils.bukkit.BukkitPlugin;
 import dev.bluetree242.discordsrvutils.utils.Utils;
 import github.scarsz.discordsrv.dependencies.kyori.adventure.text.Component;
 import lombok.Getter;
@@ -46,10 +48,11 @@ public class BukkitCommandUser extends CommandUser {
 
     @Override
     public void sendMessage(String msg) {
-        sender.sendMessage(Utils.colors(msg));
+        sendMessage(Utils.colors(msg));
     }
 
     @Override
     public void sendMessage(Component component) {
+        ((BukkitPlugin) DiscordSRVUtils.get().getPlatform()).getAudience().sender(sender).sendMessage(component);
     }
 }

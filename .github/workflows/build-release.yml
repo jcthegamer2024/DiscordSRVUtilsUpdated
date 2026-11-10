@@ -11,13 +11,16 @@ on:
 jobs:
   build:
     runs-on: ubuntu-latest
+    env:
+      REPO_USERNAME: ${{ secrets.REPO_USERNAME }}
+      REPO_PASSWORD: ${{ secrets.REPO_PASSWORD }}
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
       - name: Set up JDK
         uses: actions/setup-java@v4
         with:
-          java-version: "17"
+          java-version: "25"
           distribution: "zulu"
           java-package: jdk
       - name: Setup Gradle
@@ -30,6 +33,7 @@ jobs:
           name: DiscordSRVUtils (jar is in zip)
           path: "build/libs/*.jar"
       - name: Publish to maven repository
+        if: env.REPO_USERNAME != '' && env.REPO_PASSWORD != ''
         run: ./gradlew core:publish
         env:
           REPO_USERNAME: ${{ secrets.REPO_USERNAME }}

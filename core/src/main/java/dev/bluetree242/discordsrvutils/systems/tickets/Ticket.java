@@ -48,6 +48,10 @@ public class Ticket {
     @Getter
     private final boolean firstMessage;
     private Long messageID;
+    @Getter
+    private Long claimedBy;
+
+    void setClaimedBy(Long claimedBy) { this.claimedBy = claimedBy; }
 
     public Ticket(DiscordSRVUtils core, String id, Long userID, Long channelID, boolean closed, Panel panel, Long messageID, boolean firstMessage) {
         this.core = core;
@@ -120,7 +124,7 @@ public class Ticket {
                 new PlaceholdObject(core, core.getPlatform().getDiscordSRV().getMainGuild().getMember(userWhoOpened), "member"),
                 new PlaceholdObject(core, core.getPlatform().getDiscordSRV().getMainGuild(), "guild"),
                 new PlaceholdObject(core, panel, "panel")
-        ), null).build()).setActionRow(Button.danger("close_ticket", Emoji.fromUnicode("\uD83D\uDD12")).withLabel(core.getTicketsConfig().ticket_close_button())).complete();
+        ), null).build()).setActionRow(core.getTicketManager().getOpenTicketButtons(claimedBy)).complete();
         messageID = msg.getIdLong();
         conn.update(TicketsTable.TICKETS)
                 .set(TicketsTable.TICKETS.MESSAGEID, messageID)

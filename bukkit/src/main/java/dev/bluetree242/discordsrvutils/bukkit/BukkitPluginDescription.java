@@ -39,6 +39,6 @@ public class BukkitPluginDescription extends PlatformPluginDescription {
 
     @Override
     public String getVersion() {
-        return main.getDescription().getVersion();
+        return main.getPluginMeta().getVersion();
     }
 }
