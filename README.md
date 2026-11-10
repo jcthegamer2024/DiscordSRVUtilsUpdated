@@ -4,7 +4,16 @@
   <a href="https://discordsrvutils.xyz"><img alt="Website" height="56" src="https://cdn.jsdelivr.net/npm/@intergrav/devins-badges@3/assets/cozy/documentation/website_vector.svg"></a>
 </div>
 
-# DiscordSRVUtils
+# DiscordSRVUtilsUpdated
+
+This is a modified fork of [DiscordSRVUtils](https://github.com/BlueDevelopersInc/DiscordSRVUtils),
+originally developed by BlueTree242 and contributors. This fork's changes dated
+10 November 2026 include Paper 26.3/Java 25 support, MiniMessage, safer configuration
+migration, and staff ticket claiming. The code remains licensed under the
+[GNU GPL version 3](LICENSE), retaining the original copyright notices.
+
+The plugin's internal name remains `DiscordSRVUtils` so existing data directories
+and integrations continue to work.
 
 Elevate your Discord server with custom messages, synced punishments, tickets, and leveling!
 
