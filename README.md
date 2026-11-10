@@ -152,3 +152,7 @@ through restarts and closing/reopening; only the first concurrent claim succeeds
 Existing open ticket messages receive the button when the bot becomes ready.
 Customize the label with `ticket-claim-button` in `tickets.yml` (default: Claim Ticket).
 Existing configuration files remain untouched and use the new default in memory.
+
+Update notifications compare this fork's GitHub releases, including betas for beta
+installations. `dev-updatechecker` lets stable installations include beta releases.
+Checks are cached for ten minutes and still respect `-Ddiscordsrvutils.updatecheck=false`.

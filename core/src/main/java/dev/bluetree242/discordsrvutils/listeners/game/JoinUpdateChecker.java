@@ -43,7 +43,7 @@ public class JoinUpdateChecker extends PlatformListener {
 
     @Override
     public void onJoin(PlatformJoinEvent e) {
-        if (e.getPlayer().hasPermission("discordsrvutils.updatechecker")) {
+        if (e.getPlayer().hasPermission("discordsrvutils.updatecheck") || e.getPlayer().hasPermission("discordsrvutils.updatechecker")) {
             core.getAsyncManager().executeAsync(() -> {
                 try {
                     UpdateChecker.UpdateCheckResult result = core.getUpdateChecker().updateCheck(false);

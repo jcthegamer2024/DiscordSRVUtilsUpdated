@@ -23,12 +23,10 @@
 package dev.bluetree242.discordsrvutils.updatechecker;
 
 import dev.bluetree242.discordsrvutils.DiscordSRVUtils;
-import dev.bluetree242.discordsrvutils.VersionInfo;
 import dev.bluetree242.discordsrvutils.exceptions.InvalidResponseException;
 import dev.bluetree242.discordsrvutils.utils.Utils;
 import github.scarsz.discordsrv.dependencies.jackson.annotation.JsonIgnoreProperties;
 import github.scarsz.discordsrv.dependencies.jackson.annotation.JsonProperty;
-import github.scarsz.discordsrv.dependencies.jackson.databind.ObjectMapper;
 import github.scarsz.discordsrv.dependencies.kyori.adventure.text.Component;
 import github.scarsz.discordsrv.dependencies.kyori.adventure.text.format.NamedTextColor;
 import github.scarsz.discordsrv.dependencies.kyori.adventure.text.minimessage.MiniMessage;
@@ -44,40 +42,49 @@ import java.util.logging.Level;
 @RequiredArgsConstructor
 public class UpdateChecker {
     private final DiscordSRVUtils core;
-    private final ObjectMapper objectMapper = Utils.OBJECT_MAPPER;
+    private UpdateCheckResult cached;
+    private long cachedAt;
+    private String cachedVersion;
+    private boolean cachedBetas;
+    private final OkHttpClient client = new OkHttpClient.Builder()
+            .connectTimeout(10, java.util.concurrent.TimeUnit.SECONDS)
+            .readTimeout(10, java.util.concurrent.TimeUnit.SECONDS).build();
 
-    public @Nullable UpdateCheckResult updateCheck(boolean startup) {
+    public synchronized @Nullable UpdateCheckResult updateCheck(boolean startup) {
         if (!System.getProperty("discordsrvutils.updatecheck", "true").equalsIgnoreCase("true")) return null;
-        UpdateCheckResult result = runRequest(startup);
-        if (startup || result.getLogLevel() != Level.INFO) {
-            core.getLogger().log(result.getLogLevel(), result.getConsoleMessage());
+        String version = core.getPlatform().getDescription().getVersion();
+        boolean betas = core.getMainConfig().dev_updatechecker();
+        if (cached == null || !version.equals(cachedVersion) || betas != cachedBetas
+                || System.nanoTime() - cachedAt >= java.util.concurrent.TimeUnit.MINUTES.toNanos(10)) {
+            cached = runRequest(version, betas);
+            cachedAt = System.nanoTime();
+            cachedVersion = version;
+            cachedBetas = betas;
         }
-        return result;
+        if (startup || cached.getLogLevel() != Level.INFO) {
+            core.getLogger().log(cached.getLogLevel(), cached.getConsoleMessage());
+        }
+        return cached;
     }
 
-    private UpdateCheckResult runRequest(boolean startup) {
-        OkHttpClient client = new OkHttpClient();
-        MultipartBody form = new MultipartBody.Builder().setType(MediaType.get("multipart/form-data"))
-                .addFormDataPart("updatecheckVersion", "1")
-                .addFormDataPart("version", core.getPlatform().getDescription().getVersion())
-                .addFormDataPart("buildNumber", VersionInfo.BUILD_NUMBER)
-                .addFormDataPart("commit", VersionInfo.COMMIT)
-                .addFormDataPart("buildDate", VersionInfo.BUILD_DATE)
-                .addFormDataPart("devUpdatechecker", String.valueOf(core.getMainConfig().dev_updatechecker()))
-                .build();
-
-        Request req = new Request.Builder().url(System.getProperty("discordsrvutils.updatecheck.url", "https://discordsrvutils.xyz/updatecheck"))
-                .post(form)
-                .addHeader("Accept", "application/json")
-                .build();
-        try (Response response = client.newCall(req).execute()) {
-            String body = response.body().string();
-            if (response.code() != 200) throw new InvalidResponseException(body, null);
-            UpdateCheckResult result = objectMapper.readValue(body, UpdateCheckResult.class);
-            response.close();
+    private UpdateCheckResult runRequest(String version, boolean betas) {
+        Request request = new Request.Builder().url(System.getProperty("discordsrvutils.updatecheck.url",
+                        "https://api.github.com/repos/jcthegamer2024/DiscordSRVUtilsUpdated/releases?per_page=100"))
+                .get().header("Accept", "application/vnd.github+json")
+                .header("User-Agent", "DiscordSRVUtilsUpdated/" + version).build();
+        try (Response response = client.newCall(request).execute()) {
+            if (response.code() != 200 || response.body() == null) {
+                throw new java.io.IOException("GitHub update check returned HTTP " + response.code());
+            }
+            var status = GitHubReleaseCheck.check(version, betas, response.body().string());
+            UpdateCheckResult result = new UpdateCheckResult();
+            result.versionsBehind = status.versionsBehind();
+            result.downloadUrl = status.downloadUrl();
+            result.shouldDisable = false;
+            result.messageFormat = MessageFormat.MINIMESSAGE;
             return result;
-        } catch (Throwable e) {
-            throw new InvalidResponseException(e.getMessage(), e);
+        } catch (Exception ex) {
+            throw new InvalidResponseException(ex.getMessage(), ex);
         }
     }
 
